@@ -1,0 +1,243 @@
+variables:
+  # Where pull maven dependencies and push application binaries
+  MAVEN_CLI_OPTS: "-s uud/settings.xml --batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  # When using dind, it's wise to use the overlayfs driver for improved performance.
+  DOCKER_DRIVER: overlay2
+  JAR_PATH: target/*.jar
+
+  # Vault
+  VAULT_ADDR: "https://vault.factory.adeo.cloud"
+  APP_NAME: "oaa-vfp-backend"
+  VAULT_SECRET_PATH: "${APP_NAME}/ci"
+
+before_script:
+  - export IMAGE_VERSION=$(cat pom.xml | grep "<version>.*</version>$" | head -n1 | awk -F'[><]' '{print $3}')
+
+stages:
+  - get-vault-token
+  - build-jar-and-deploy-on-jfrog
+  - docker-deploy-on-jfrog
+  - manawa-release
+
+# Connection to Vault to retrieve credentials
+Get Vault Token:
+  stage: get-vault-token
+  image:
+    name: 'adeo-docker-adeo-software-factory-release.jfrog.io/vault/vault-ci:latest'
+  artifacts:
+    paths:
+    - vault.token.enc
+    - vault-ci-tools/
+    expire_in: "600"
+  script:
+    - ./build
+  tags:
+    - factory
+    - vault
+  except: 
+    - /^feature\/(.*)$/
+
+# -- JOB TEMPLATES -- #
+.default:
+  dependencies:
+  - Get Vault Token
+  tags:
+  - adeo-cloud
+  - factory
+
+.defaultopenshift:
+  extends: .default
+  image: adeo-docker.jfrog.io/dockerfiles-collection/oc-helm-cli:3.10.0-2.12.1-1
+  script:
+    # Vault
+    - apt-get install -y jq gettext curl openssl perl
+    - sh ./vault-ci-tools/vaultDecryptToken.sh
+    - sh ./vault-ci-tools/vaultGetSecret.sh
+    - sh ./vault-ci-tools/vaultSecretToEnv.sh -s "${VAULT_SECRET_PATH}" -k "common" -o /tmp/common.sh
+    - sh ./vault-ci-tools/vaultSecretToEnv.sh -s "${VAULT_SECRET_PATH}" -k "${ENVIRONMENT}" -o /tmp/${ENVIRONMENT}.sh
+    - source /tmp/common.sh
+    - source /tmp/${ENVIRONMENT}.sh
+
+    # Manawa
+    - oc --insecure-skip-tls-verify login --token="${OC_TOKEN}" ${OC_URL}
+    - oc --insecure-skip-tls-verify project ${OC_PROJECT}
+    - envsubst < helm/values.tmpl.yaml > helm/values.yaml
+    - envsubst < helm/templates/deployment.tmpl.yaml > helm/templates/deployment.yaml
+    - rm -rf helm/*.tmlp.*
+    - export DEPLOYS=$(helm ls --tiller-namespace $OC_PROJECT | grep $HELM_NAME | wc -l)
+    - if [ ${DEPLOYS} -eq 0 ]; then helm install --name=${HELM_NAME} ./helm --tiller-namespace $OC_PROJECT; else helm upgrade $HELM_NAME ./helm --force --recreate-pods --tiller-namespace $OC_PROJECT; fi
+  dependencies:
+    - Get Vault Token
+
+
+
+.defaultmvn:
+  extends: .default
+  image: maven:3.6.0-jdk-8-alpine
+  script:
+  - apk add jq gettext curl openssl perl
+  - sh ./vault-ci-tools/vaultDecryptToken.sh
+  - sh ./vault-ci-tools/vaultGetSecret.sh
+  - sh ./vault-ci-tools/vaultSecretToEnv.sh -s "${VAULT_SECRET_PATH}" -k "common" -o /tmp/common.sh
+  - source /tmp/common.sh
+  - sh ./scripts/createProperties.sh
+  - mvn $MAVEN_CLI_OPTS clean deploy -U -X
+  cache:
+    key: $CI_BUILD_REF_NAME
+    paths:
+    - .m2/repository
+  artifacts:
+    paths:
+    - $JAR_PATH
+
+Maven Build On Dev:
+  stage: build-jar-and-deploy-on-jfrog
+  extends: .defaultmvn
+  only:
+    - develop
+
+Maven Build On Prod:
+  stage: build-jar-and-deploy-on-jfrog
+  extends: .defaultmvn
+  only:
+    - master
+  except:
+    - tags
+
+
+.defaultdocker:
+  extends: .default
+  image: docker:stable
+  services:
+    - name: docker:dind
+  script:
+    # Vault
+    - apk add jq gettext curl openssl
+    - sh ./vault-ci-tools/vaultDecryptToken.sh
+    - sh ./vault-ci-tools/vaultGetSecret.sh
+    - sh ./vault-ci-tools/vaultSecretToEnv.sh -s "${VAULT_SECRET_PATH}" -k "common" -o /tmp/common.sh
+    - sh ./vault-ci-tools/vaultSecretToEnv.sh -s "${VAULT_SECRET_PATH}" -k "${ENVIRONMENT}" -o /tmp/${ENVIRONMENT}.sh
+    - source /tmp/common.sh
+    - source /tmp/${ENVIRONMENT}.sh
+    
+    - docker build . -t $IMAGE_NAME
+    - docker tag $IMAGE_NAME $JFROG_IMAGE_NAME:$IMAGE_VERSION
+    - docker tag $IMAGE_NAME $JFROG_IMAGE_NAME:latest
+    - docker login --username $ARTIFACTORY_USER --password $ARTIFACTORY_PWD $REGISTRY
+    - docker push $JFROG_IMAGE_NAME:latest
+    - docker push $JFROG_IMAGE_NAME:$IMAGE_VERSION
+    - docker logout $REGISTRY
+
+.defaultturbine:
+  stage: manawa-release
+  tags:
+    - adeo-cloud
+  allow_failure: true
+  when: manual
+  script:
+    # Vault
+    - apk add jq gettext curl openssl
+    - sh ./vault-ci-tools/vaultDecryptToken.sh
+    - sh ./vault-ci-tools/vaultGetSecret.sh
+    - sh ./vault-ci-tools/vaultSecretToEnv.sh -s "${VAULT_SECRET_PATH}" -k "common" -o /tmp/common.sh
+    - source /tmp/common.sh
+    
+    # Turbine
+    - echo -e "Deploying to Turbine"
+    - docker login -u "$ARTIFACTORY_USER" -p "$ARTIFACTORY_PWD" adeo-docker.jfrog.io
+    - docker run adeo-docker.jfrog.io/turbine/turbine-client:latest --username $TURBINE_USER --password $TURBINE_PASSWORD job start image_deploy --environment=$TURBINE_ENV --instance=$TURBINE_INSTANCE --service=$APP_NAME --version=$IMAGE_VERSION
+    - echo -e "Deployed"
+  dependencies:
+    - Get Vault Token
+
+Deploy On JFrog Dev:
+  stage: docker-deploy-on-jfrog
+  extends: .defaultdocker
+  only:
+    - develop
+  variables: 
+    ENVIRONMENT: "dev"
+  dependencies:
+    - Get Vault Token
+    - Maven Build On Dev
+
+Deploy On JFrog Prod:
+  stage: docker-deploy-on-jfrog
+  extends: .defaultdocker
+  only:
+    - master
+  except:
+    - tags
+  variables:
+    ENVIRONMENT: "prod"
+  dependencies:
+    - Get Vault Token
+    - Maven Build On Prod
+
+
+# Deploy to Manawa on dev
+Deploy On Turbine Dev:
+  stage: manawa-release
+  extends: .defaultturbine
+  variables:
+    TURBINE_ENV: "frlm-web-vds-dev"
+    TURBINE_INSTANCE: "dev"
+  only:
+    - develop
+
+# Deploy to Manawa on QA
+Deploy On Turbine QA:
+  stage: manawa-release
+  extends: .defaultturbine
+  variables:
+    TURBINE_ENV: "frlm-web-vds-qa"
+    TURBINE_INSTANCE: "qa"
+  only:
+    - release
+
+# Deploy to Turbine on preprod
+Deploy On PreProd:
+  stage: manawa-release
+  extends: .defaultturbine
+  variables:
+    TURBINE_ENV: "frlm-xnet-service-prep"
+    TURBINE_INSTANCE: "prep"
+  only:
+  - master
+  except: 
+    - tags
+
+# Deploy to Turbine on prod
+Deploy On Prod:
+  stage: manawa-release
+  extends: .defaultturbine
+  variables:
+    TURBINE_ENV: "frlm-xnet-service-prod"
+    TURBINE_INSTANCE: "prod"
+  only:
+  - tags
+  except:
+  - branches
+
+# Deploy to Manawa on preprod
+Deploy On Manawa PreProd:
+  stage: manawa-release
+  extends: .defaultopenshift
+  variables:
+    ENVIRONMENT: "pprod"
+    HELM_PULL_POLICY: "Always"
+  only:
+    - master
+
+# Deploy to Manawa on prod
+Deploy On Manawa Prod:
+  stage: manawa-release
+  extends: .defaultopenshift
+  variables:
+    ENVIRONMENT: "prod"
+    HELM_PULL_POLICY: "IfNotPresent"
+  only:
+    - tags
+  except:
+    - branches

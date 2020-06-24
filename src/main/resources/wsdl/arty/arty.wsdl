@@ -1,0 +1,156 @@
+<?xml version='1.0' encoding='UTF-8'?><wsdl:definitions name="ServicePrestataireWsWithDocsService" targetNamespace="http://internal.service.arty.diamant.adeo.com/" xmlns:ns1="http://service.arty.diamant.adeo.com/" xmlns:ns2="http://cxf.apache.org/bindings/xformat" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://internal.service.arty.diamant.adeo.com/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <wsdl:import location="https://rfrlmabarta01.corp.leroymerlin.com:12443/arty/web-service/prestataireWithDocs?wsdl=IServicePrestataireWsWithDocs.wsdl" namespace="http://service.arty.diamant.adeo.com/">
+    </wsdl:import>
+    <wsdl:binding name="ServicePrestataireWsWithDocsServiceSoapBinding" type="ns1:IServicePrestataireWsWithDocs">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+        <wsdl:operation name="getPartenaireParNomCodePostal">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getPartenaireParNomCodePostal">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getPartenaireParNomCodePostalResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getPartenaireParNumeroTelephone">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getPartenaireParNumeroTelephone">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getPartenaireParNumeroTelephoneResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getPartenairesByMagasin">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getPartenairesByMagasin">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getPartenairesByMagasinResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getPartenairesParMagasinEtRayon">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getPartenairesParMagasinEtRayon">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getPartenairesParMagasinEtRayonResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getAllPartenaires">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getAllPartenaires">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getAllPartenairesResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getTypePrestationByMagasin">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getTypePrestationByMagasin">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getTypePrestationByMagasinResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getPartenaire">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getPartenaire">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getPartenaireResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getPartenairesParMagasinEtTypePrestation">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getPartenairesParMagasinEtTypePrestation">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getPartenairesParMagasinEtTypePrestationResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getPartenairesByMagasinPP">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getPartenairesByMagasinPP">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getPartenairesByMagasinPPResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getPartenaireParIdentifiant">
+            <soap:operation soapAction="" style="document" />
+            <wsdl:input name="getPartenaireParIdentifiant">
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output name="getPartenaireParIdentifiantResponse">
+                <soap:body use="literal" />
+            </wsdl:output>
+            <wsdl:fault name="GenericPartenairesProcessException">
+                <soap:fault name="GenericPartenairesProcessException" use="literal" />
+            </wsdl:fault>
+            <wsdl:fault name="PartenaireNonTrouveException">
+                <soap:fault name="PartenaireNonTrouveException" use="literal" />
+            </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="ServicePrestataireWsWithDocsService">
+        <wsdl:port binding="tns:ServicePrestataireWsWithDocsServiceSoapBinding" name="ServicePrestataireWsWithDocsPort">
+            <soap:address location="https://rfrlmabarta01.corp.leroymerlin.com:12443/arty/web-service/prestataireWithDocs" />
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>
