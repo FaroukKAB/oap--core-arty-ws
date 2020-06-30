@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.1.0 http://maven.apache.org/xsd/settings-1.1.0.xsd"
+          xmlns="http://maven.apache.org/SETTINGS/1.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <servers>
+    <server>
+      <id>adeo-artifactory-releases</id>
+      <username>${env.ARTIFACTORY_USER}</username>
+      <password>${env.ARTIFACTORY_PWD}</password>
+    </server>
+    <server>
+      <id>adeo-artifactory-snapshots</id>
+      <username>${env.ARTIFACTORY_USER}</username>
+      <password>${env.ARTIFACTORY_PWD}</password>
+    </server>
+    <server>
+      <id>adeo-artifactory-mirror</id>
+      <username>${env.ARTIFACTORY_USER}</username>
+      <password>${env.ARTIFACTORY_PWD}</password>
+    </server>
+  </servers>
+
+  <profiles>
+    <profile>
+      <id>adeo-artifactory</id>
+
+      <repositories>
+        <repository>
+          <id>adeo-nexus-releases</id>
+          <name>Adeo Nexus Snapshots Repository</name>
+          <url>http://nexus.adeo.com:8083/nexus/content/groups/public</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </repository>
+        <repository>
+          <id>adeo-nexus-snapshots</id>
+          <name>Adeo Nexus Snapshots Repository</name>
+          <url>http://nexus.adeo.com:8083/nexus/content/groups/public-snapshots</url>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>never</updatePolicy>
+          </snapshots>
+        </repository>
+
+        <repository>
+          <id>adeo-artifactory-releases</id>
+          <name>Adeo Artifactory Releases Repository</name>
+          <url>https://adeo.jfrog.io/adeo/maven-releases</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>adeo-artifactory-snapshots</id>
+          <name>Adeo Artifactory Snapshots Repository</name>
+          <url>https://adeo.jfrog.io/adeo/maven-snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+
+      <pluginRepositories>
+        <pluginRepository>
+          <id>adeo-artifactory-releases</id>
+          <name>Adeo Artifactory Plugins Releases Repository</name>
+          <url>https://adeo.jfrog.io/adeo/maven-plugins-releases</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+          <id>adeo-artifactory-snapshots</id>
+          <name>Adeo Artifactory Plugins Snapshots Repository</name>
+          <url>https://adeo.jfrog.io/adeo/maven-plugins-snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>adeo-artifactory</activeProfile>
+  </activeProfiles>
+
+</settings>
