@@ -2,35 +2,35 @@
 # - VAULT_ARTIFACT_CRYPTO_KEY: crypto key used in order to uncrypt your vault.secrets file
 # - VAULT_ROLE_ID: Access token in order to access to Vault
 # - VAULT_NAMESPACE: Your Vault namespace
-  ​
+
 include:
   - project: 'adeotech/cnp/cnp-gitlab-ci-templates'
     ref: v3.3.1
     file: 'vault/get-vault-secret-template.yml'
-  ​
-- project: 'adeotech/cnp/cnp-gitlab-ci-templates'
-  ref: v3.3.1
-  file: 'java/maven-template.yml'
-  ​
-- project: 'adeotech/cnp/cnp-gitlab-ci-templates'
-  ref: v3.3.1
-  file: 'java/maven-build-test-with-vault-template.yml'
-  ​
-- project: 'adeotech/cnp/cnp-gitlab-ci-templates'
-  ref: v3.3.1
-  file: 'docker/package-push-jfrog-with-vault-template.yml'
-  ​
-- project: 'adeotech/cnp/cnp-gitlab-ci-templates'
-  ref: v3.3.1
-  file: 'manawa/deploy-with-vault-template.yml'
-  ​
-  ​
+
+  - project: 'adeotech/cnp/cnp-gitlab-ci-templates'
+    ref: v3.3.1
+    file: 'java/maven-template.yml'
+
+  - project: 'adeotech/cnp/cnp-gitlab-ci-templates'
+    ref: v3.3.1
+    file: 'java/maven-build-test-with-vault-template.yml'
+
+  - project: 'adeotech/cnp/cnp-gitlab-ci-templates'
+    ref: v3.3.1
+    file: 'docker/package-push-jfrog-with-vault-template.yml'
+
+  - project: 'adeotech/cnp/cnp-gitlab-ci-templates'
+    ref: v3.3.1
+    file: 'manawa/deploy-with-vault-template.yml'
+
+
 # Caching maven libraries for future builds
 cache:
   paths:
     - .m2/repository/
-  ​
-  ​
+
+
 #Set up build process using stages
 # Build stages in java can be a little long so start it first
 # If you still want to get your vault stage first, don't forget to increase the vault module token duration
@@ -42,25 +42,38 @@ stages:
   - verify
   - package
   - deploy
-  ​
-  ​
+
+
 variables:
   # Prepare variables
   # Vault prefix in case your vault config is in a subfolder of your namespace, if not leave this empty
   #the final / have to appear!
   APP_NAME: "oap--core-arty-ws"
   VAULT_SECRET_PATH_PREFIX: "oap--core-arty-ws/"
-  ​
-  ​
-# Maven Options
-MAVEN_BUILDER_IMAGE: maven:3.6.3-jdk-8
-MAVEN_OPTS: -Dmaven.repo.local=.m2/repository
-MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode"
-ARTIFACT_PATH: "oap--core-arty-ws/target/*.jar"
-DOCKERFILE: "oap--core-arty-ws/Dockerfile"
-# Debug mode : for dev only, carefull it shows SENSITIVE DATA like Vault Secrets and such
-# DEBUG: "true"
-  ​
+
+  # Maven Options
+  MAVEN_BUILDER_IMAGE: maven:3.6.3-jdk-8
+  MAVEN_OPTS: -Dmaven.repo.local=.m2/repository
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode"
+  ARTIFACT_PATH: "oap--core-arty-ws/target/*.jar"
+  DOCKERFILE: "oap--core-arty-ws/Dockerfile"
+  # Debug mode : for dev only, carefull it shows SENSITIVE DATA like Vault Secrets and such
+  # DEBUG: "true"
+
+.maven-get-version:
+  extends: .maven-template
+  stage: create-app-version-file
+  script:
+    - APP_VERSION='APP_VERSION='
+    - APP_VERSION+=$(cat pom.xml | grep "<version>.*</version>$" | head -n1 | awk -F'[><]' '{print $3}')
+    # If we specify $COMMIT_SHA_VERSION, then we add commit sha to the version
+    # - if [[ ! -z "$COMMIT_SHA_VERSION" ]]; then APP_VERSION+="-$CI_COMMIT_SHORT_SHA"; fi
+    - echo $APP_VERSION > appversion
+  artifacts:
+    expire_in: "3000"
+    paths:
+      - appversion
+
 .maven-settings-from-vault:
   image: ${MAVEN_BUILDER_IMAGE}
   variables:
@@ -70,49 +83,49 @@ DOCKERFILE: "oap--core-arty-ws/Dockerfile"
 
     - apt-get update
     - apt-get -y install  jq openssl
-  ​
-- sh ./vault-ci-tools/vaultDecryptToken.sh
-- sh ./vault-ci-tools/vaultGetSecret.sh
-- sh ./vault-ci-tools/vaultSecretToEnv.sh -s "${VAULT_SECRET_PATH_FACTORY_COMMON}"  -o "ci-factory-common.secrets"
-  ​
-# Get Vault secrets as environment variables
-- set -a
-- source ./ci-factory-common.secrets
-- 'echo "$MAVEN_SETTINGS" > "./m2-settings.xml"'
-except:
-  - schedules
-tags:
-  - adeo-cloud
-  - xl
-  ​
+
+    - sh ./vault-ci-tools/vaultDecryptToken.sh
+    - sh ./vault-ci-tools/vaultGetSecret.sh
+    - sh ./vault-ci-tools/vaultSecretToEnv.sh -s "${VAULT_SECRET_PATH_FACTORY_COMMON}"  -o "ci-factory-common.secrets"
+
+    # Get Vault secrets as environment variables
+    - set -a
+    - source ./ci-factory-common.secrets
+    - 'echo "$MAVEN_SETTINGS" > "./m2-settings.xml"'
+  except:
+    - schedules
+  tags:
+    - adeo-cloud
+    - xl
+
 get-version:
   extends: .maven-get-version
-  ​
+
 build:
   extends: .maven-build-with-vault
-  ​
+
 test:
   extends: .maven-test-with-vault
-  ​
+
 check-dependency:
   extends: .maven-check-dependency
-  ​
+
 get-vault-secret:
   extends: .get-vault-secret
-  ​
+
 package-image-release:
   extends: .package-image-release
   only:
     - tags
   except:
     - branches
-  ​
+
 package-image-dev:
   extends: .package-image-dev
   only:
     - develop
     - feature/ci-cd
-  ​
+
 openshift-deploy-dev:
   extends: .openshift-deploy
   variables:
@@ -121,7 +134,7 @@ openshift-deploy-dev:
   only:
     - develop
     - feature/ci-cd
-  ​
+
 openshift-deploy-qa:
   extends: .openshift-deploy
   variables:
@@ -129,7 +142,7 @@ openshift-deploy-qa:
     HELM_CHART: "cnp-initcontainer-helm-template"
   only:
     - release
-  ​
+
 openshift-deploy-prep:
   extends: .openshift-deploy
   variables:
